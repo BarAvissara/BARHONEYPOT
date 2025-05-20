@@ -47,7 +47,7 @@ def ssh_client(server_ip, server_port, username_list, password_list, max_attempt
 
 if __name__ == "__main__":
     SERVER_IP = "127.0.0.1"
-    SERVER_PORT = 1357
+    SERVER_PORT = 22
 
     USERNAME_LIST = [
         "admin", "root", "administrator", "user", "guest", "test", "support",

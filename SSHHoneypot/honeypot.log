@@ -40,3 +40,60 @@
 2025-05-16 11:41:40,164 - Connection handling error: 
 2025-05-16 11:41:40,164 - Session ended - IP: 127.0.0.1, Duration: 17.62s
 2025-05-16 11:41:40,165 - Socket exception: An operation was attempted on something that is not a socket (10038)
+2025-05-20 23:02:04,547 - SSH Honeypot listening on port 22
+2025-05-20 23:02:23,353 - SSH Honeypot listening on port 22
+2025-05-20 23:03:31,324 - New connection from 127.0.0.1:48373
+2025-05-20 23:03:32,111 - Connected (version 2.0, client paramiko_3.5.0)
+2025-05-20 23:03:32,188 - Login attempt - Username: user, Password: admin
+2025-05-20 23:03:32,190 - Auth rejected (password).
+2025-05-20 23:03:33,197 - New connection from 127.0.0.1:48375
+2025-05-20 23:03:34,017 - Connected (version 2.0, client paramiko_3.5.0)
+2025-05-20 23:03:34,036 - Login attempt - Username: login, Password: root
+2025-05-20 23:03:34,037 - Auth rejected (password).
+2025-05-20 23:03:35,052 - New connection from 127.0.0.1:48379
+2025-05-20 23:03:35,835 - Connected (version 2.0, client paramiko_3.5.0)
+2025-05-20 23:03:35,853 - Login attempt - Username: operator, Password: root
+2025-05-20 23:03:35,854 - Auth rejected (password).
+2025-05-20 23:03:36,861 - New connection from 127.0.0.1:48381
+2025-05-20 23:03:37,640 - Connected (version 2.0, client paramiko_3.5.0)
+2025-05-20 23:03:37,658 - Login attempt - Username: info, Password: root
+2025-05-20 23:03:37,659 - Auth rejected (password).
+2025-05-20 23:03:38,674 - New connection from 127.0.0.1:48382
+2025-05-20 23:03:39,454 - Connected (version 2.0, client paramiko_3.5.0)
+2025-05-20 23:03:39,472 - Login attempt - Username: demo, Password: toor
+2025-05-20 23:03:39,473 - Auth rejected (password).
+2025-05-20 23:03:40,478 - New connection from 127.0.0.1:48392
+2025-05-20 23:03:41,260 - Connected (version 2.0, client paramiko_3.5.0)
+2025-05-20 23:03:41,278 - Login attempt - Username: operator, Password: admin
+2025-05-20 23:03:41,279 - Auth rejected (password).
+2025-05-20 23:03:42,286 - New connection from 127.0.0.1:48393
+2025-05-20 23:03:43,068 - Connected (version 2.0, client paramiko_3.5.0)
+2025-05-20 23:03:43,087 - Login attempt - Username: login, Password: 123456
+2025-05-20 23:03:43,088 - Auth rejected (password).
+2025-05-20 23:03:44,093 - New connection from 127.0.0.1:48398
+2025-05-20 23:03:44,874 - Connected (version 2.0, client paramiko_3.5.0)
+2025-05-20 23:03:44,892 - Login attempt - Username: info, Password: toor
+2025-05-20 23:03:44,893 - Auth rejected (password).
+2025-05-20 23:03:45,905 - New connection from 127.0.0.1:48399
+2025-05-20 23:03:46,691 - Connected (version 2.0, client paramiko_3.5.0)
+2025-05-20 23:03:46,710 - Login attempt - Username: administrator, Password: password123
+2025-05-20 23:03:46,711 - Auth rejected (password).
+2025-05-20 23:03:47,727 - New connection from 127.0.0.1:48401
+2025-05-20 23:03:48,511 - Connected (version 2.0, client paramiko_3.5.0)
+2025-05-20 23:03:48,530 - Login attempt - Username: user, Password: toor
+2025-05-20 23:03:48,531 - Brute force detected from IP: 127.0.0.1 (Attempts: 10)
+2025-05-20 23:03:51,088 - Auth rejected (password).
+2025-05-20 23:03:51,089 - Session ended - IP: 127.0.0.1, Duration: 19.77s
+2025-05-20 23:03:51,089 - Session ended - IP: 127.0.0.1, Duration: 14.23s
+2025-05-20 23:03:51,090 - Session ended - IP: 127.0.0.1, Duration: 17.89s
+2025-05-20 23:03:51,090 - Session ended - IP: 127.0.0.1, Duration: 7.00s
+2025-05-20 23:03:51,090 - Session ended - IP: 127.0.0.1, Duration: 10.61s
+2025-05-20 23:03:51,091 - Session ended - IP: 127.0.0.1, Duration: 3.36s
+2025-05-20 23:03:51,099 - Socket exception: An existing connection was forcibly closed by the remote host (10054)
+2025-05-20 23:03:51,099 - Socket exception: An existing connection was forcibly closed by the remote host (10054)
+2025-05-20 23:03:51,100 - Session ended - IP: 127.0.0.1, Duration: 16.05s
+2025-05-20 23:03:51,100 - Socket exception: An existing connection was forcibly closed by the remote host (10054)
+2025-05-20 23:03:51,100 - Socket exception: An existing connection was forcibly closed by the remote host (10054)
+2025-05-20 23:03:51,100 - Session ended - IP: 127.0.0.1, Duration: 5.19s
+2025-05-20 23:03:51,100 - Session ended - IP: 127.0.0.1, Duration: 12.43s
+2025-05-20 23:03:51,101 - Session ended - IP: 127.0.0.1, Duration: 8.81s

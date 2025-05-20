@@ -23,26 +23,26 @@ def detect_brute_force(username, client_ip):
     # check if number of attempts> max failed attempts
     if len(failed_attempts[username]) >= MAX_FAILED_ATTEMPTS:
         logging.warning(f"Brute force detected for username: {username} (Attempts: {len(failed_attempts[username])})")
-        #send_email_alert(
-       #     "Brute Force Attack Detected (Username)",
-       #     f"Brute force attack detected for username: {username} from IP: {client_ip}. Attempts: {len(failed_attempts[username])}"
-       # )
+        send_email_alert(
+            "Brute Force Attack Detected (Username)",
+            f"Brute force attack detected for username: {username} from IP: {client_ip}. Attempts: {len(failed_attempts[username])}"
+        )
     if len(failed_attempts[client_ip]) >= MAX_FAILED_ATTEMPTS:
         logging.warning(f"Brute force detected from IP: {client_ip} (Attempts: {len(failed_attempts[client_ip])})")
-    #    send_email_alert(
-    #        "Brute Force Attack Detected (IP)",
-    #        f"Brute force attack detected from IP: {client_ip}. Attempts: {len(failed_attempts[client_ip])}"
-    #    )
+        send_email_alert(
+            "Brute Force Attack Detected (IP)",
+            f"Brute force attack detected from IP: {client_ip}. Attempts: {len(failed_attempts[client_ip])}"
+        )
 
 # sql input ' OR '1'='1
 def detect_sql_injection(input,client_ip,query):
     suspicious_patterns = ["'", '"', "--", ";", " OR ", " AND ", " UNION ", " SELECT ", " DROP ", " INSERT ",  " DELETE ", " UPDATE "]
     if any(pattern in input.upper() for pattern in suspicious_patterns):
         logging.warning(f"Possible SQL Injection Attempt: {input}\n")
-    #    send_email_alert(
-    #        "SQL Injection detected (IP)",
-    #        f"SQL Injection attack detected from IP: {client_ip}. Query: {query}"
-    #    )
+        send_email_alert(
+            "SQL Injection detected (IP)",
+            f"SQL Injection attack detected from IP: {client_ip}. Query: {query}"
+        )
 
 def detect_reverse_shell(command,channel):
     flag=False
@@ -62,17 +62,16 @@ def detect_reverse_shell(command,channel):
     else:
         flag=True
     if flag is False:
-        a=5
-        #    send_email_alert(
-    #        "Reverse shell attempt detected",
-    #        f"Rverse shell detected from IP: {client_ip}. Query: {type}"
-    #    )
+            send_email_alert(
+            "Reverse shell attempt detected",
+            f"Reverse shell detected. Query: {type}"
+        )
 
 
 def send_email_alert(subject, body):
-    sender_email = "xxxxx@gmail.com"
-    receiver_email = "xxxxxx@example.com"
-    password = "xxxx"
+    sender_email = "barsshhoneypot@gmail.com"
+    receiver_email = "barsshhoneypot@example.com"
+    password = "jkaz cwel hzhg cmla"
 
     msg = MIMEMultipart()
     msg['From'] = sender_email
