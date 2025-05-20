@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Honeypot Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #121212;
+            color: #00ff00;
+            margin: 0;
+            padding: 20px;
+        }
+        #log-container {
+            background-color: #000;
+            padding: 15px;
+            border-radius: 5px;
+            height: 60vh;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+        }
+        .timestamp {
+            color: #ff9900;
+        }
+        .ip-address {
+            color: #00ffff;
+            font-weight: bold;
+        }
+        .attack-type {
+            color: #ff5555;
+            font-weight: bold;
+        }
+        .non-attack {
+            color: #00ff00;
+            font-style: italic;
+        }
+        h1 {
+            color: #fff;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .chart-container {
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 5px;
+            position: relative;
+        }
+        .loading::after {
+            content: "Updating...";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #00ff00;
+        }
+        .counter {
+            background: #1e1e1e;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+        }
+        .blacklist-section {
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .blacklist-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        #blacklist-ip {
+            flex-grow: 1;
+            background: #121212;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 5px;
+        }
+        .blacklist-list {
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .blacklist-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px;
+            border-bottom: 1px solid #333;
+        }
+        button {
+            background-color: #333;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+        }
+        button:hover {
+            background-color: #00ff00;
+            color: #121212;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <h1>SSH Honeypot Monitor</h1>
+
+    <div class="counter">
+        Total Attacks: <span id="totalAttacks">0</span> |
+        Total Connections: <span id="totalConnections">0</span>
+    </div>
+
+    <div class="dashboard">
+        <div class="chart-container" id="attackChartContainer">
+            <canvas id="attackTypeChart"></canvas>
+        </div>
+        <div class="chart-container" id="ipChartContainer">
+            <canvas id="ipChart"></canvas>
+        </div>
+    </div>
+
+    <div class="blacklist-section">
+        <h3>IP Blacklist</h3>
+        <div class="blacklist-controls">
+            <input type="text" id="blacklist-ip" placeholder="192.168.1.1">
+            <button id="block-btn" onclick="addToBlacklist()">Block IP</button>
+        </div>
+        <div class="blacklist-list" id="blacklist-ips"></div>
+    </div>
+
+    <div id="log-container"></div>
+
+    <script>
+        // Initialize Socket.io
+        const socket = io();
+        let attackTypeChart, ipChart;
+        let isUpdatingStats = false;
+        const updateInterval = 2000; // 2 seconds
+
+        // Color configuration
+        const attackColors = {
+            'SQL Injection': '#FFCE56',  // Yellow
+            'Brute Force': '#FF6384',    // Red
+            'Reverse Shell': '#36A2EB',  // Blue
+            'Other': '#4BC0C0'           // Teal
+        };
+
+        // Format log entries
+        function formatLogEntry(logData) {
+            try {
+                const parts = logData.split(' - ');
+                if (parts.length >= 2) {
+                    const timestamp = parts[0];
+                    const message = parts.slice(1).join(' - ');
+                    const ipMatch = message.match(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/);
+                    const ip = ipMatch ? ipMatch[0] : '';
+
+                    let attackType = '';
+                    const lowerMsg = message.toLowerCase();
+                    if (lowerMsg.includes('sql injection')) attackType = 'SQL Injection';
+                    else if (lowerMsg.includes('brute force')) attackType = 'Brute Force';
+                    else if (lowerMsg.includes('reverse shell')) attackType = 'Reverse Shell';
+
+                    let html = `<div class="log-entry">`;
+                    html += `<span class="timestamp">${timestamp}</span> - `;
+                    if (ip) html += `<span class="ip-address">${ip}</span> `;
+                    if (attackType) {
+                        html += `<span class="attack-type">[${attackType}]</span> `;
+                    } else {
+                        html += `<span class="non-attack">[Connection]</span> `;
+                    }
+                    html += message.replace(ip, '').replace(attackType, '');
+                    html += `</div>`;
+
+                    return html;
+                }
+            } catch (e) {
+                console.error('Error formatting log:', e);
+            }
+            return `<div class="log-entry">${logData}</div>`;
+        }
+
+        // Initialize charts
+        function initCharts() {
+            const attackCtx = document.getElementById('attackTypeChart').getContext('2d');
+            const ipCtx = document.getElementById('ipChart').getContext('2d');
+
+            attackTypeChart = new Chart(attackCtx, {
+                type: 'pie',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: [],
+                        borderColor: '#1E1E1E',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Attack Types',
+                            color: '#FFF',
+                            font: { size: 16 }
+                        },
+                        legend: {
+                            labels: {
+                                color: '#FFF',
+                                font: { size: 12 }
+                            }
+                        }
+                    }
+                }
+            });
+
+            ipChart = new Chart(ipCtx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Attack Count',
+                        data: [],
+                        backgroundColor: '#FF5555',
+                        borderColor: '#1E1E1E',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Top Attacker IPs',
+                            color: '#FFF',
+                            font: { size: 16 }
+                        },
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#FFF'
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#FFF'
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update charts with new data
+        function updateCharts(data) {
+            // Attack Types Chart
+            const attackLabels = Object.keys(data.attack_types || {});
+            attackTypeChart.data.labels = attackLabels;
+            attackTypeChart.data.datasets[0].data = attackLabels.map(label => data.attack_types[label]);
+            attackTypeChart.data.datasets[0].backgroundColor = attackLabels.map(label => attackColors[label] || '#CCCCCC');
+            attackTypeChart.update();
+
+            // IP Chart (Top 5)
+            const ipEntries = Object.entries(data.top_ips || {}).slice(0, 5);
+            ipChart.data.labels = ipEntries.map(entry => entry[0]);
+            ipChart.data.datasets[0].data = ipEntries.map(entry => entry[1]);
+            ipChart.update();
+
+            // Update counters
+            document.getElementById('totalAttacks').textContent = data.total_attacks || 0;
+            document.getElementById('totalConnections').textContent = data.total_connections || 0;
+        }
+
+        // Blacklist functions
+        async function loadBlacklist() {
+            try {
+                const response = await fetch('/blacklist');
+                const data = await response.json();
+                const list = document.getElementById('blacklist-ips');
+                list.innerHTML = data.blacklist.map(ip => `
+                    <div class="blacklist-item">
+                        ${ip}
+                        <button onclick="removeFromBlacklist('${ip}')">Unblock</button>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Failed to load blacklist:', error);
+            }
+        }
+
+        async function addToBlacklist() {
+            const ipInput = document.getElementById('blacklist-ip');
+            const ip = ipInput.value.trim();
+            if (!ip) return;
+
+            const btn = document.getElementById('block-btn');
+            btn.disabled = true;
+            btn.textContent = 'Blocking...';
+
+            try {
+                const response = await fetch('/blacklist', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'add', ip: ip })
+                });
+
+                if (response.ok) {
+                    ipInput.value = '';
+                    await loadBlacklist();
+                }
+            } catch (error) {
+                console.error('Failed to block IP:', error);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Block IP';
+            }
+        }
+
+        async function removeFromBlacklist(ip) {
+            try {
+                await fetch('/blacklist', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'remove', ip: ip })
+                });
+                await loadBlacklist();
+            } catch (error) {
+                console.error('Failed to unblock IP:', error);
+            }
+        }
+
+        // Throttled stats updates
+        async function updateStats() {
+            if (isUpdatingStats) return;
+            isUpdatingStats = true;
+
+            document.getElementById('attackChartContainer').classList.add('loading');
+            document.getElementById('ipChartContainer').classList.add('loading');
+
+            try {
+                const response = await fetch('/get-stats');
+                const data = await response.json();
+
+                if (data.status !== 'wait') {
+                    updateCharts(data);
+                }
+            } catch (error) {
+                console.error('Stats update failed:', error);
+            } finally {
+                document.getElementById('attackChartContainer').classList.remove('loading');
+                document.getElementById('ipChartContainer').classList.remove('loading');
+                isUpdatingStats = false;
+                setTimeout(updateStats, updateInterval);
+            }
+        }
+
+        // Socket.io event handlers
+        socket.on('new_log', function(data) {
+            const logEntry = formatLogEntry(data.data);
+            const container = document.getElementById('log-container');
+            container.insertAdjacentHTML('beforeend', logEntry);
+            container.scrollTop = container.scrollHeight;
+        });
+
+        // Initialize everything when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initCharts();
+            loadBlacklist();
+            updateStats(); // Start the stats update cycle
+
+            // Load initial logs
+            fetch('/get-logs')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('log-container');
+                    data.logs.reverse().forEach(log => {
+                        container.insertAdjacentHTML('afterbegin', formatLogEntry(log));
+                    });
+                    container.scrollTop = container.scrollHeight;
+                })
+                .catch(error => console.error('Failed to load logs:', error));
+        });
+    </script>
+</body>
+</html>

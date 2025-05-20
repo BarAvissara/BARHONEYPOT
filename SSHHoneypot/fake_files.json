@@ -1,0 +1,11 @@
+{
+    "home": {
+        "user": {
+            "fakefile.txt": "This is fake content.",
+            "passwords.txt": "admin:12345\nroot:toor"
+        },
+        "supersecret": {
+            "realpasswords.txt": "qwerty12345"
+        }
+    }
+}

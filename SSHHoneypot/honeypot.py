@@ -3,31 +3,68 @@ import paramiko
 import logging
 from concurrent.futures import ThreadPoolExecutor
 import threading
+import sqlite3
+from attacks import *
+from shell import *
+conn = sqlite3.connect('honeypot.db')
+cursor = conn.cursor()
+import json
+from pathlib import Path
+# create table
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY,
+    username TEXT NOT NULL,
+    password TEXT NOT NULL
+)
+''')
+
+cursor.execute("INSERT INTO users (username, password) VALUES ('admin', 'password123')")
+cursor.execute("INSERT INTO users (username, password) VALUES ('guest', 'guestpass')")
+cursor.execute("INSERT INTO users (username, password) VALUES ('user1', 'userpass')")
+
+conn.commit()
+conn.close()
+
+conn = sqlite3.connect('honeypot.db')
+cursor = conn.cursor()
 
 
 logging.basicConfig(filename='honeypot.log', level=logging.INFO, format='%(asctime)s - %(message)s')
-fake_files = {
-    "home": {
-        "user": {
-            "fakefile.txt": "This is fake content.",
-            "passwords.txt": "admin:12345\nroot:toor",
-        }
-        ,"supersecret":
-            {
-            "realpasswords.txt":"qwerty12345"
-        }
-    }
-}
+
 
 class SSHServer(paramiko.ServerInterface):
-    def __init__(self):
+    def __init__(self,client_ip):
         self.event = threading.Event()
+        self.__client_ip = client_ip
         super().__init__()
         print("SSHServer initialized")
 
     def check_auth_password(self, username, password):
         logging.info(f"Login attempt - Username: {username}, Password: {password}")
-        return paramiko.AUTH_SUCCESSFUL
+
+
+        if blacklist_manager.contains(self.__client_ip):  # blacklist check
+            logging.warning(f"BLOCKED: {self.__client_ip} (blacklisted)")
+            return paramiko.AUTH_FAILED
+        conn = sqlite3.connect('honeypot.db')
+        cursor = conn.cursor()
+        # sql check
+        query = f"SELECT * FROM users WHERE username = '{username}' AND password = '{password}'"
+        with open("SQLQueries.log", "a") as log:
+            log.write(f"Attempted Query: {query}\n")
+        cursor.execute(query)
+        user = cursor.fetchone()
+
+
+        if user:
+            detect_sql_injection(username,client_addr[0],query)
+            detect_sql_injection(password,client_addr[0],query)
+            return paramiko.AUTH_SUCCESSFUL
+        detect_brute_force(username, client_addr[0])
+        return paramiko.AUTH_FAILED
+
+
 
     def check_channel_request(self, kind, chanid):
         if kind == 'session':
@@ -41,89 +78,71 @@ class SSHServer(paramiko.ServerInterface):
         self.event.set()
         return True
 
-def handle_shell(channel):
-    channel.send("Welcome to the very important secret server!\n")
-    channel.send("Type 'exit' to disconnect.\n")
+class BlacklistManager:
+    def __init__(self, file_path="blacklist.json"):
+        self.file_path = Path(file_path)
+        self.blacklisted_ips = set()
+        self.load()
 
-    while True:
-        channel.send("$ ")
-        command = channel.recv(1024).decode('utf-8').strip()
-        logging.info(f"Command received: {command}")
+    def load(self):
+        if self.file_path.exists():
+            with open(self.file_path, 'r') as f:
+                self.blacklisted_ips = set(json.load(f))
 
-        if command.lower() == 'exit':
-            channel.send("Goodbye!\n")
-            break
-        elif command.startswith('ls'):
-            path = command[3:].strip() or "."
-            response = handle_ls(path)
-            channel.send(response + "\n")
-        elif command.startswith('cat'):
-            _, *args = command.split()
-            if args:
-                response = handle_cat(args[0])
-                channel.send(response + "\n")
-            else:
-                response = "cat: Missing file operand"
-                channel.send(response + "\n")
-            channel.send("$ ")  # Send prompt immediately after output
-        elif command == 'whoami':
-            channel.send("fakeuser\n")
-            channel.send("$ ")
-        else:
-            channel.send(f"{command}: command not found\n")
-            channel.send("$ ")  # Send prompt immediately after output
+    def save(self):
+        with open(self.file_path, 'w') as f:
+            json.dump(list(self.blacklisted_ips), f)
 
-    channel.close()
+    def add(self, ip):
+        self.blacklisted_ips.add(ip)
+        self.save()
+
+    def remove(self, ip):
+        self.blacklisted_ips.discard(ip)
+        self.save()
+
+    def contains(self, ip):
+        return ip in self.blacklisted_ips
+
+# global variant
+blacklist_manager = BlacklistManager()
 
 
-def handle_connection(client):
+def handle_connection(client,client_adrr):
+    start_time = time.time()
     try:
         transport = paramiko.Transport(client)
         server_key = paramiko.RSAKey.from_private_key_file('key')
         transport.add_server_key(server_key)
-        ssh = SSHServer()
+        ssh = SSHServer(client_adrr[0])
         transport.start_server(server=ssh)
 
-        channel = transport.accept(20)  # Timeout of 20 seconds for client connection
+        channel = transport.accept(20)
         if channel is not None:
             handle_shell(channel)
     except Exception as e:
         logging.error(f"Connection handling error: {e}")
     finally:
+        duration = time.time() - start_time
+        logging.info(f"Session ended - IP: {client_addr[0]}, Duration: {duration:.2f}s")
         client.close()
 
 
-def handle_ls(path):
-    path = path.strip() or '.'
-    parts = path.strip("/").split("/")
-    current_dir = fake_files
-    for part in parts:
-        if part in current_dir and isinstance(current_dir[part], dict):
-            current_dir = current_dir[part]
-        else:
-            return f"{path}: Not a directory or does not exist"
-
-    return "\n".join(current_dir.keys()) if isinstance(current_dir, dict) else f"{path}: Not a directory"
-
-def handle_cat(path):
-    parts = path.strip("/").split("/")
-    current_dir = fake_files
-    for part in parts[:-1]:
-        current_dir = current_dir.get(part, {})
-    return current_dir.get(parts[-1], "File not found")
 
 def main():
     server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server_sock.bind(('', 12537))
+    port=22
+    server_sock.bind(('', port))
     server_sock.listen(100)
-    logging.info("SSH Honeypot listening on port 12537")
+    logging.info(f"SSH Honeypot listening on port {port}")
 
     with ThreadPoolExecutor(max_workers=10) as executor:
         while True:
+            global client_addr
             client_sock, client_addr = server_sock.accept()
             logging.info(f"New connection from {client_addr[0]}:{client_addr[1]}")
-            executor.submit(handle_connection, client_sock)
+            executor.submit(handle_connection, client_sock,client_addr)
 
 
 if __name__ == "__main__":

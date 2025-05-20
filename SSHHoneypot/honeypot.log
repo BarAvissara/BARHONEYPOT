@@ -1,0 +1,42 @@
+2025-05-16 00:37:20,235 - SSH Honeypot listening on port 1357
+2025-05-16 00:37:34,034 - New connection from 127.0.0.1:52668
+2025-05-16 00:37:34,819 - Connected (version 2.0, client paramiko_3.5.0)
+2025-05-16 00:37:34,852 - Login attempt - Username: admin, Password: password123
+2025-05-16 00:37:34,853 - Auth granted (password).
+2025-05-16 00:37:41,954 - Command received: 
+2025-05-16 00:37:41,955 - Connection handling error: 
+2025-05-16 00:37:41,955 - Socket exception: An operation was attempted on something that is not a socket (10038)
+2025-05-16 00:37:56,205 - SSH Honeypot listening on port 1357
+2025-05-16 00:56:40,332 - SSH Honeypot listening on port 1357
+2025-05-16 00:56:49,876 - New connection from 127.0.0.1:53401
+2025-05-16 00:56:50,657 - Connected (version 2.0, client paramiko_3.5.0)
+2025-05-16 00:56:50,686 - Login attempt - Username: admin, Password: password123
+2025-05-16 00:56:50,687 - Auth granted (password).
+2025-05-16 00:57:01,771 - Command received: ls
+2025-05-16 00:57:08,029 - Command received: cd ..
+2025-05-16 00:57:09,334 - Command received: ls
+2025-05-16 00:57:12,812 - Command received: cat supersecret
+2025-05-16 00:57:19,563 - Command received: cd supersecret
+2025-05-16 00:57:23,940 - Command received: ls
+2025-05-16 00:57:29,589 - Command received: cat newfile.txt
+2025-05-16 00:57:46,314 - Command received: cat supersecret/realpasswords.txt
+2025-05-16 00:57:53,405 - Command received: reset
+2025-05-16 00:58:01,442 - Command received: resetfs
+2025-05-16 00:58:01,443 - The system has been reset
+2025-05-16 00:58:05,178 - Command received: ls
+2025-05-16 00:58:07,721 - Command received: 
+2025-05-16 00:58:07,721 - Connection handling error: Socket is closed
+2025-05-16 00:58:07,721 - Session ended - IP: 127.0.0.1, Duration: 77.84s
+2025-05-16 11:41:15,736 - SSH Honeypot listening on port 1357
+2025-05-16 11:41:22,540 - New connection from 127.0.0.1:48934
+2025-05-16 11:41:23,321 - Connected (version 2.0, client paramiko_3.5.0)
+2025-05-16 11:41:23,350 - Login attempt - Username: admin, Password: password123
+2025-05-16 11:41:23,352 - Auth granted (password).
+2025-05-16 11:41:26,316 - Command received: ls
+2025-05-16 11:41:29,031 - Command received: cd ..
+2025-05-16 11:41:29,606 - Command received: cat
+2025-05-16 11:41:34,538 - Command received: ls
+2025-05-16 11:41:40,164 - Command received: 
+2025-05-16 11:41:40,164 - Connection handling error: 
+2025-05-16 11:41:40,164 - Session ended - IP: 127.0.0.1, Duration: 17.62s
+2025-05-16 11:41:40,165 - Socket exception: An operation was attempted on something that is not a socket (10038)
