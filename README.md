@@ -1,2 +1,2 @@
 # BARHONEYPOT
-honeypot
+SSH honeypot Systens Planning & Programming final project
